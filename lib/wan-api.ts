@@ -7,14 +7,22 @@ import {
   type WanTaskStatusResponse,
 } from "@/types";
 
-const BASE_URL = "https://dashscope-us.aliyuncs.com/api/v1";
+// Region-specific base URLs
+const REGION_URLS = {
+  us: "https://dashscope-us.aliyuncs.com/api/v1",
+  intl: "https://dashscope-intl.aliyuncs.com/api/v1",
+  cn: "https://dashscope.aliyuncs.com/api/v1",
+};
+
+const BASE_URL = REGION_URLS[process.env.DASHSCOPE_REGION as keyof typeof REGION_URLS] || REGION_URLS.us;
 
 function getApiKey(): string {
   const apiKey = process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
     throw new Error("DASHSCOPE_API_KEY environment variable is not set");
   }
-  return apiKey;
+  // Trim any whitespace that might have been accidentally added
+  return apiKey.trim();
 }
 
 export function determineModel(
@@ -100,22 +108,32 @@ export async function createVideoTask(
   params: CreateVideoTaskParams,
 ): Promise<CreateVideoTaskResult> {
   const requestBody = buildRequestBody(params);
+  const apiKey = getApiKey();
+  const url = `${BASE_URL}/services/aigc/video-generation/video-synthesis`;
 
-  const response = await fetch(
-    `${BASE_URL}/services/aigc/video-generation/video-synthesis`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getApiKey()}`,
-        "X-DashScope-Async": "enable",
-      },
-      body: JSON.stringify(requestBody),
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "X-DashScope-Async": "enable",
     },
-  );
+    body: JSON.stringify(requestBody),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('=== WAN API ERROR ===');
+    console.error('Error Response:', errorText);
+    
+    // Try to parse error as JSON for better readability
+    try {
+      const errorJson = JSON.parse(errorText);
+      console.error('Parsed Error:', JSON.stringify(errorJson, null, 2));
+    } catch (e) {
+      console.error('Raw Error Text:', errorText);
+    }
+    
     throw new Error(`Wan API error: ${response.status} - ${errorText}`);
   }
 

@@ -86,14 +86,26 @@ export async function trimVideoToSeconds(
     const outputName = 'output.mp4';
     await ffmpeg.writeFile(inputName, await fetchFile(file));
 
-    // Trim to first N seconds
+    // Trim to first N seconds with compression
     await ffmpeg.exec([
       '-i',
       inputName,
       '-t',
       maxSeconds.toString(),
-      '-c',
-      'copy',
+      '-vf',
+      'scale=720:-2',        // Resize to 720p width, maintain aspect ratio
+      '-c:v',
+      'libx264',             // Re-encode with H.264
+      '-preset',
+      'fast',                // Encoding speed (fast = good balance)
+      '-crf',
+      '28',                  // Quality level (23=high, 28=medium, 32=low)
+      '-c:a',
+      'aac',                 // Audio codec
+      '-b:a',
+      '128k',                // Audio bitrate
+      '-movflags',
+      '+faststart',          // Enable streaming/progressive download
       outputName,
     ]);
 
