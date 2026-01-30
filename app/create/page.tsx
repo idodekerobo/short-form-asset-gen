@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { VideoDropzone } from '@/components/VideoDropzone';
 import { PromptInput } from '@/components/PromptInput';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import { InstagramConnect } from '@/components/InstagramConnect';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { type FileType, type Duration, type Resolution, type GenerateResponse } from '@/types';
@@ -20,6 +21,7 @@ export default function CreatePage() {
   const [resolution, setResolution] = useState<Resolution>('720P');
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [instagramVideo, setInstagramVideo] = useState<string | null>(null);
 
   const handleFileSelect = (file: File, type: FileType): void => {
     setReferenceFile(file);
@@ -41,9 +43,21 @@ export default function CreatePage() {
     setPromptImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleInstagramVideoSelect = (base64Video: string, metadata: { id: string; caption?: string }): void => {
+    setInstagramVideo(base64Video);
+    // Clear any existing reference file since we're using Instagram video
+    setReferenceFile(null);
+    setReferenceType(null);
+    // Optionally pre-fill the prompt with the caption
+    if (metadata.caption && !prompt) {
+      setPrompt(metadata.caption);
+    }
+    setError(null);
+  };
+
   const handleGenerate = async (): Promise<void> => {
-    if (!referenceFile && !prompt) {
-      setError('Please provide either a reference file or a text prompt');
+    if (!referenceFile && !instagramVideo && !prompt) {
+      setError('Please provide either a reference file, Instagram video, or a text prompt');
       return;
     }
 
@@ -88,7 +102,10 @@ export default function CreatePage() {
         requestBody.prompt = prompt;
       }
 
-      if (referenceFile && referenceType === 'video') {
+      // Use Instagram video if available, otherwise use uploaded file
+      if (instagramVideo) {
+        requestBody.referenceVideoBase64 = instagramVideo;
+      } else if (referenceFile && referenceType === 'video') {
         requestBody.referenceVideoBase64 = refBase64;
       } else if (referenceFile && referenceType === 'image') {
         requestBody.referenceImageBase64 = [refBase64!];
@@ -120,7 +137,7 @@ export default function CreatePage() {
     }
   };
 
-  const canGenerate = referenceFile !== null || prompt.trim().length > 0;
+  const canGenerate = referenceFile !== null || instagramVideo !== null || prompt.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-background py-12">
@@ -136,6 +153,17 @@ export default function CreatePage() {
               <div className="mt-4 p-4 bg-muted rounded-lg">
                 <p className="text-sm font-medium">Selected {referenceType}:</p>
                 <p className="text-sm text-muted-foreground">{referenceFile.name}</p>
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Or Import from Instagram</h2>
+            <InstagramConnect onVideoSelect={handleInstagramVideoSelect} />
+            {instagramVideo && (
+              <div className="mt-4 p-4 bg-muted rounded-lg">
+                <p className="text-sm font-medium">Instagram video selected</p>
+                <p className="text-xs text-muted-foreground mt-1">Ready to generate</p>
               </div>
             )}
           </Card>

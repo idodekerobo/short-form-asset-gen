@@ -80,7 +80,7 @@ export default function GeneratePage({ params }: GeneratePageProps) {
     );
   }
 
-  if (status.status === 'SUCCEEDED' && status.videoUrl) {
+  if (status && status.status === 'SUCCEEDED' && status.videoUrl) {
     return (
       <div className="min-h-screen bg-background py-12">
         <div className="max-w-4xl mx-auto px-6">

@@ -99,7 +99,11 @@ export async function trimVideoToSeconds(
 
     // Read output file
     const data = await ffmpeg.readFile(outputName);
-    const trimmedBlob = new Blob([data], { type: 'video/mp4' });
+    // FileData can be Uint8Array or string, we need Uint8Array for video
+    const uint8Data = data instanceof Uint8Array ? data : new Uint8Array();
+    // Convert to regular ArrayBuffer to satisfy TypeScript - cast to ArrayBuffer
+    const arrayBuffer = uint8Data.buffer.slice(uint8Data.byteOffset, uint8Data.byteOffset + uint8Data.byteLength) as ArrayBuffer;
+    const trimmedBlob = new Blob([arrayBuffer], { type: 'video/mp4' });
     const trimmedFile = new File([trimmedBlob], file.name, { type: 'video/mp4' });
 
     // Cleanup
