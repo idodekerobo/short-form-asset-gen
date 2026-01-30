@@ -1,5 +1,6 @@
 // Wan API Models
-export type WanModel = 'wan2.6-t2v' | 'wan2.6-i2v' | 'wan2.6-i2v-flash' | 'wan2.6-r2v';
+// Note: wan2.6-r2v doesn't exist in DashScope API. Use wan2.6-i2v or wan2.6-i2v-flash for reference videos
+export type WanModel = 'wan2.6-t2v' | 'wan2.6-i2v' | 'wan2.6-i2v-flash';
 
 // Task Status from Wan API
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'UNKNOWN';

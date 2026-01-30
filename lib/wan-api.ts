@@ -31,7 +31,9 @@ export function determineModel(
   hasPrompt: boolean,
 ): WanModel {
   if (hasVideo) {
-    return "wan2.6-r2v";
+    // Use i2v-flash for reference videos (faster, good quality)
+    // Alternative: "wan2.6-i2v" for higher quality but slower
+    return "wan2.6-i2v-flash";
   }
   if (hasImages) {
     return "wan2.6-i2v-flash";
@@ -69,6 +71,8 @@ interface WanRequestBody {
     watermark: boolean;
     size?: string;
     resolution?: Resolution;
+    shot_type?: "single" | "multi";
+    seed?: number;
   };
 }
 
@@ -77,11 +81,18 @@ function buildRequestBody(params: CreateVideoTaskParams): WanRequestBody {
 
   const body: WanRequestBody = {
     model,
-    input: {},
+    input: {
+      // Add negative prompt to improve quality and avoid common artifacts
+      negative_prompt: "low quality, blurry, distorted, watermark, text, deformed, pixelated, compression artifacts, worst quality, low resolution, error, bad proportions, extra limbs",
+    },
     parameters: {
       duration,
       prompt_extend: true,
       watermark: false,
+      // Add shot_type for better control (single shot for most use cases)
+      shot_type: "single",
+      // Add random seed for reproducibility while maintaining variety
+      seed: Math.floor(Math.random() * 2147483647),
     },
   };
 
