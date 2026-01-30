@@ -4,7 +4,7 @@ import { Sparkles, Video, Wand2 } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 to-zinc-900">
       <div className="max-w-4xl mx-auto px-6 text-center">
         <div className="mb-8 flex justify-center">
           <div className="relative">
