@@ -9,8 +9,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Turbopack config (Next.js 16 default)
+  turbopack: {
+    resolveAlias: {
+      // Required for @ffmpeg/ffmpeg to work in browser
+      fs: false,
+      path: false,
+      crypto: false,
+    },
+  },
+  // Webpack config (fallback for --webpack flag)
   webpack: (config) => {
-    // Required for @ffmpeg/ffmpeg to work in browser
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
