@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VideoDropzone } from '@/components/VideoDropzone';
+import { PromptInput } from '@/components/PromptInput';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { type FileType, type Duration, type Resolution, type GenerateResponse } from '@/types';
@@ -12,6 +13,8 @@ export default function CreatePage() {
   const router = useRouter();
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [referenceType, setReferenceType] = useState<FileType | null>(null);
+  const [prompt, setPrompt] = useState<string>('');
+  const [promptImages, setPromptImages] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
@@ -27,9 +30,17 @@ export default function CreatePage() {
     setReferenceType(null);
   };
 
+  const handleImageAdd = (file: File): void => {
+    setPromptImages((prev) => [...prev, file]);
+  };
+
+  const handleImageRemove = (index: number): void => {
+    setPromptImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleGenerate = async (): Promise<void> => {
-    if (!referenceFile || !referenceType) {
-      setError('Please select a file first');
+    if (!referenceFile && !prompt) {
+      setError('Please provide either a reference file or a text prompt');
       return;
     }
 
@@ -37,17 +48,54 @@ export default function CreatePage() {
     setError(null);
 
     try {
-      const base64 = await fileToBase64(referenceFile);
+      const base64Promises: Promise<string>[] = [];
 
-      const requestBody = {
-        duration: 10 as Duration,
-        resolution: '720P' as Resolution,
+      if (referenceFile) {
+        base64Promises.push(fileToBase64(referenceFile));
+      }
+
+      promptImages.forEach((image) => {
+        base64Promises.push(fileToBase64(image));
+      });
+
+      const base64Results = await Promise.all(base64Promises);
+
+      let refBase64: string | undefined;
+      let promptImageBase64: string[] = [];
+
+      if (referenceFile) {
+        refBase64 = base64Results[0];
+        promptImageBase64 = base64Results.slice(1);
+      } else {
+        promptImageBase64 = base64Results;
+      }
+
+      const requestBody: {
+        duration: Duration;
+        resolution: Resolution;
+        prompt?: string;
+        referenceVideoBase64?: string;
+        referenceImageBase64?: string[];
+      } = {
+        duration: 10,
+        resolution: '720P',
       };
 
-      if (referenceType === 'video') {
-        Object.assign(requestBody, { referenceVideoBase64: base64 });
-      } else {
-        Object.assign(requestBody, { referenceImageBase64: [base64] });
+      if (prompt) {
+        requestBody.prompt = prompt;
+      }
+
+      if (referenceFile && referenceType === 'video') {
+        requestBody.referenceVideoBase64 = refBase64;
+      } else if (referenceFile && referenceType === 'image') {
+        requestBody.referenceImageBase64 = [refBase64!];
+      }
+
+      if (promptImageBase64.length > 0) {
+        requestBody.referenceImageBase64 = [
+          ...(requestBody.referenceImageBase64 || []),
+          ...promptImageBase64,
+        ];
       }
 
       const response = await fetch('/api/generate', {
@@ -57,7 +105,8 @@ export default function CreatePage() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data: GenerateResponse = await response.json();
@@ -67,6 +116,8 @@ export default function CreatePage() {
       setIsGenerating(false);
     }
   };
+
+  const canGenerate = referenceFile !== null || prompt.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-background py-12">
@@ -86,11 +137,21 @@ export default function CreatePage() {
             )}
           </Card>
 
+          <Card className="p-6">
+            <PromptInput
+              prompt={prompt}
+              onChange={setPrompt}
+              onImageAdd={handleImageAdd}
+              onImageRemove={handleImageRemove}
+              images={promptImages}
+            />
+          </Card>
+
           <Button
             size="lg"
             className="w-full"
             onClick={handleGenerate}
-            disabled={!referenceFile || isGenerating}
+            disabled={!canGenerate || isGenerating}
           >
             {isGenerating ? 'Creating...' : 'Generate Video'}
           </Button>
