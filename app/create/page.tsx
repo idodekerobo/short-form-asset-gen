@@ -1,14 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { VideoDropzone } from '@/components/VideoDropzone';
 import { Card } from '@/components/ui/card';
-import { type FileType } from '@/types';
+import { Button } from '@/components/ui/button';
+import { type FileType, type Duration, type Resolution, type GenerateResponse } from '@/types';
+import { fileToBase64 } from '@/lib/video-utils';
 
 export default function CreatePage() {
+  const router = useRouter();
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [referenceType, setReferenceType] = useState<FileType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const handleFileSelect = (file: File, type: FileType): void => {
     setReferenceFile(file);
@@ -20,6 +25,47 @@ export default function CreatePage() {
     setError(errorMessage);
     setReferenceFile(null);
     setReferenceType(null);
+  };
+
+  const handleGenerate = async (): Promise<void> => {
+    if (!referenceFile || !referenceType) {
+      setError('Please select a file first');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      const base64 = await fileToBase64(referenceFile);
+
+      const requestBody = {
+        duration: 10 as Duration,
+        resolution: '720P' as Resolution,
+      };
+
+      if (referenceType === 'video') {
+        Object.assign(requestBody, { referenceVideoBase64: base64 });
+      } else {
+        Object.assign(requestBody, { referenceImageBase64: [base64] });
+      }
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: GenerateResponse = await response.json();
+      router.push(`/generate/${data.taskId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate video');
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -39,6 +85,15 @@ export default function CreatePage() {
               </div>
             )}
           </Card>
+
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={handleGenerate}
+            disabled={!referenceFile || isGenerating}
+          >
+            {isGenerating ? 'Creating...' : 'Generate Video'}
+          </Button>
         </div>
       </div>
     </div>
