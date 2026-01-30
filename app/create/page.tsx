@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VideoDropzone } from '@/components/VideoDropzone';
 import { PromptInput } from '@/components/PromptInput';
+import { SettingsPanel } from '@/components/SettingsPanel';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { type FileType, type Duration, type Resolution, type GenerateResponse } from '@/types';
@@ -15,6 +16,8 @@ export default function CreatePage() {
   const [referenceType, setReferenceType] = useState<FileType | null>(null);
   const [prompt, setPrompt] = useState<string>('');
   const [promptImages, setPromptImages] = useState<File[]>([]);
+  const [duration, setDuration] = useState<Duration>(10);
+  const [resolution, setResolution] = useState<Resolution>('720P');
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
@@ -77,8 +80,8 @@ export default function CreatePage() {
         referenceVideoBase64?: string;
         referenceImageBase64?: string[];
       } = {
-        duration: 10,
-        resolution: '720P',
+        duration,
+        resolution,
       };
 
       if (prompt) {
@@ -146,6 +149,13 @@ export default function CreatePage() {
               images={promptImages}
             />
           </Card>
+
+          <SettingsPanel
+            duration={duration}
+            resolution={resolution}
+            onDurationChange={setDuration}
+            onResolutionChange={setResolution}
+          />
 
           <Button
             size="lg"
