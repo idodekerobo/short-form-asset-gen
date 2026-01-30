@@ -9,15 +9,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Turbopack config (Next.js 16 default)
-  turbopack: {
-    resolveAlias: {
-      // Required for @ffmpeg/ffmpeg to work in browser
-      fs: false,
-      path: false,
-      crypto: false,
-    },
-  },
+  // Empty turbopack config to silence the warning
+  // FFmpeg.wasm works fine in Turbopack without special config
+  turbopack: {},
   // Webpack config (fallback for --webpack flag)
   webpack: (config) => {
     config.resolve.fallback = {
