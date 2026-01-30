@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { GenerationProgress } from '@/components/GenerationProgress';
+import { VideoPlayer } from '@/components/VideoPlayer';
 import { Button } from '@/components/ui/button';
 import { type StatusResponse } from '@/types';
 
@@ -82,10 +83,12 @@ export default function GeneratePage({ params }: GeneratePageProps) {
   if (status.status === 'SUCCEEDED' && status.videoUrl) {
     return (
       <div className="min-h-screen bg-background py-12">
-        <div className="max-w-4xl mx-auto px-6 text-center space-y-6">
-          <h1 className="text-3xl font-bold">Your Video is Ready!</h1>
-          <p className="text-muted-foreground">Video URL: {status.videoUrl}</p>
-          <Button onClick={() => router.push('/create')}>Generate Another</Button>
+        <div className="max-w-4xl mx-auto px-6">
+          <h1 className="text-3xl font-bold mb-8 text-center">Your Video is Ready!</h1>
+          <VideoPlayer
+            videoUrl={status.videoUrl}
+            onGenerateAnother={() => router.push('/create')}
+          />
         </div>
       </div>
     );
